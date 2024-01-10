@@ -1,6 +1,11 @@
+# syntax=docker/dockerfile:1
+
 FROM debian:stable-slim
 
-RUN apt-get update && apt-get install -y \
+RUN <<EOF 
+    apt-get update
+    apt upgrade -y
+    apt-get install -y \
     curl \
     dnsutils \
     iproute2 \
@@ -12,10 +17,11 @@ RUN apt-get update && apt-get install -y \
     mtr \
     iperf3 \
     netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
-RUN useradd -ms /bin/bash nettools
+    apache2-utils
+    rm -rf /var/lib/apt/lists/* 
+    apt-get clean
+    useradd -ms /bin/bash nettools
+EOF
 
 USER nettools
 
