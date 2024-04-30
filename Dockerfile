@@ -17,7 +17,9 @@ RUN <<EOF
     mtr \
     iperf3 \
     netcat-openbsd \
-    apache2-utils
+    apache2-utils \
+    telnet \
+    redis-tools
     rm -rf /var/lib/apt/lists/* 
     apt-get clean
     useradd -ms /bin/bash nettools
