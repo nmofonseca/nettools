@@ -9,6 +9,10 @@ jobs:
         name: Build image
         runs-on: ubuntu-latest
         steps:
+            # Setup QEMU for multi-arch builds
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              
             # Adding Docker Buildx cache
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -24,5 +28,9 @@ jobs:
             - name: Docker build
               uses: docker/build-push-action@v5
               with:
-                push: false
+                push: ${{ github.event_name != 'pull_request' }}
+                platforms: linux/amd64,linux/arm64
                 tags: nmofonseca/nettools:latest
+                cache-from: type=gha
+                cache-to: type=gha,mode=max
+                
