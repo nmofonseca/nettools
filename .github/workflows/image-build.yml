@@ -1,0 +1,17 @@
+---
+name: Test image build
+
+on:
+    pull_request:
+
+jobs:
+    build-image:
+        name: Build image
+        runs-on: ubuntu-latest
+        steps:
+
+            - name: Docker build
+              uses: docker/build-push-action@v5
+              with:
+                push: false
+                tags: nmofonseca/nettools:latest
