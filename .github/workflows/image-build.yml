@@ -47,16 +47,6 @@ jobs:
                 username: ${{ secrets.DOCKERHUB_USERNAME }}
                 password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-              # Adding docker build test without pushing
-            - name: Docker build
-              uses: docker/build-push-action@v5
-              with:
-                push: ${{ github.event_name != 'pull_request' }}
-                platforms: linux/amd64,linux/arm64
-                tags: ${{ steps.docker_meta.outputs.tags }}
-                labels: ${{ steps.docker_meta.outputs.labels }}
-                cache-from: type=gha
-                cache-to: type=gha,mode=max
             
             ## Totally optional, but if you want to add the image tags to the PR comments you can use the following steps
             # If PR, put image tags in the PR comments
@@ -88,3 +78,22 @@ jobs:
                   ${{ steps.docker_meta.outputs.labels }}
                   ```
                 edit-mode: replace
+            
+            # Run CVE scanning with Trivy
+            - name: Run Trivy for all CVEs (non-blocking)
+              uses: aquasecurity/trivy-action@master
+              with:
+                image-ref: ${{ github.run_id }}
+                exit-code: 0
+                format: table 
+
+            # Adding docker build, won't push if it's a PR
+            - name: Docker build
+              uses: docker/build-push-action@v5
+              with:
+                push: ${{ github.event_name != 'pull_request' }}
+                platforms: linux/amd64,linux/arm64
+                tags: ${{ steps.docker_meta.outputs.tags }}
+                labels: ${{ steps.docker_meta.outputs.labels }}
+                cache-from: type=gha
+                cache-to: type=gha,mode=max
