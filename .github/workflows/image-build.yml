@@ -48,7 +48,8 @@ jobs:
               with:
                 push: ${{ github.event_name != 'pull_request' }}
                 platforms: linux/amd64,linux/arm64
-                tags: nmofonseca/nettools:latest
+                tags: ${{ steps.docker_meta.outputs.tags }}
+                labels: ${{ steps.docker_meta.outputs.labels }}
                 cache-from: type=gha
                 cache-to: type=gha,mode=max
                 
