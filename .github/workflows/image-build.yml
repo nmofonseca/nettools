@@ -11,6 +11,11 @@ jobs:
     build-image:
         name: Build image
         runs-on: ubuntu-latest
+        
+        # Without this it fails to write comments in the PR
+        permissions:
+            pull-requests: write # needed to create and update comments in PRs
+        
         steps:
             # Setup QEMU for multi-arch builds
             - name: Set up QEMU
