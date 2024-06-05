@@ -1,0 +1,113 @@
+---
+name: Test image build
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+jobs:
+    build-image:
+        name: Build image
+        runs-on: ubuntu-latest
+        
+        # Without this it fails to write comments in the PR
+        permissions:
+            pull-requests: write # needed to create and update comments in PRs
+        
+        steps:
+            # Setup QEMU for multi-arch builds
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v3
+              
+            # Adding Docker Buildx cache
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            # Adding docker meta data for tagging and versioning
+            # Moved to the beguining to avoid busting the cache
+            - name: Docker Metadata for Final Image Build
+              id: docker_meta
+              uses: docker/metadata-action@v5
+              with:
+                images: |
+                    nmofonseca/nettools
+                flavor: |
+                    latest=false
+                tags: |
+                    type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+                    type=ref,event=pr
+                    type=ref,event=branch
+                    type=semver,pattern={{version}}
+
+            # Build for security scanning with Trivy
+            - name: Build and export to Docker
+              uses: docker/build-push-action@v5
+              with:
+                push: false
+                load: true # Export to Docker Engine rather than pushing to a registry
+                tags: ${{ steps.docker_meta.outputs.tags }}
+                labels: ${{ steps.docker_meta.outputs.labels }}
+                cache-from: type=gha,scope=imagecve
+                cache-to: type=gha,mode=max,scope=imagecve
+                platforms: linux/amd64
+
+           
+            # Run CVE scanning with Trivy
+            - name: Run Trivy for all CVEs (non-blocking)
+              uses: aquasecurity/trivy-action@master
+              with:
+                image-ref: ${{ steps.docker_meta.outputs.tags }}
+                exit-code: 0
+                format: table 
+
+            # Adding docker hub login
+            - name: Login to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                username: ${{ secrets.DOCKERHUB_USERNAME }}
+                password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+            # Adding docker build, won't push if it's a PR
+            - name: Docker build
+              uses: docker/build-push-action@v5
+              with:
+                push: ${{ github.event_name != 'pull_request' }}
+                platforms: linux/amd64,linux/arm64
+                tags: ${{ steps.docker_meta.outputs.tags }}
+                labels: ${{ steps.docker_meta.outputs.labels }}
+                cache-from: type=gha,scope=imagefinal
+                cache-to: type=gha,mode=max,scope=imagefinal
+
+
+            ## Totally optional, but if you want to add the image tags to the PR comments you can use the following steps
+            # If PR, put image tags in the PR comments
+            # from https://github.com/marketplace/actions/create-or-update-comment
+            - name: Find comment for image tags
+              uses: peter-evans/find-comment@v3
+              if: github.event_name == 'pull_request'
+              id: fc
+              with:
+                issue-number: ${{ github.event.pull_request.number }}
+                comment-author: 'github-actions[bot]'
+                body-includes: Docker image tag(s) pushed
+      
+              # If PR, put image tags in the PR comments
+            - name: Create or update comment for image tags
+              uses: peter-evans/create-or-update-comment@v4
+              if: github.event_name == 'pull_request'
+              with:
+                comment-id: ${{ steps.fc.outputs.comment-id }}
+                issue-number: ${{ github.event.pull_request.number }}
+                body: |
+                  Docker image tag(s) pushed:
+                  ```text
+                  ${{ steps.docker_meta.outputs.tags }}
+                  ```
+
+                  Labels added to images:
+                  ```text
+                  ${{ steps.docker_meta.outputs.labels }}
+                  ```
+                edit-mode: replace
