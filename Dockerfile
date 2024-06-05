@@ -16,6 +16,7 @@ RUN apt-get update && apt upgrade -y && apt-get install -y  curl \
         apache2-utils \
         telnet \
         redis-tools \
+        liburi-perl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean \
     && useradd -ms /bin/bash nettools

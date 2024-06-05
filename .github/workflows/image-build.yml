@@ -49,8 +49,8 @@ jobs:
                 load: true # Export to Docker Engine rather than pushing to a registry
                 tags: ${{ steps.docker_meta.outputs.tags }}
                 labels: ${{ steps.docker_meta.outputs.labels }}
-                cache-from: type=gha
-                cache-to: type=gha,mode=max
+                cache-from: type=gha,scope=imagecve
+                cache-to: type=gha,mode=max,scope=imagecve
                 platforms: linux/amd64
 
            
@@ -77,8 +77,8 @@ jobs:
                 platforms: linux/amd64,linux/arm64
                 tags: ${{ steps.docker_meta.outputs.tags }}
                 labels: ${{ steps.docker_meta.outputs.labels }}
-                cache-from: type=gha
-                cache-to: type=gha,mode=max
+                cache-from: type=gha,scope=imagefinal
+                cache-to: type=gha,mode=max,scope=imagefinal
 
 
             ## Totally optional, but if you want to add the image tags to the PR comments you can use the following steps
